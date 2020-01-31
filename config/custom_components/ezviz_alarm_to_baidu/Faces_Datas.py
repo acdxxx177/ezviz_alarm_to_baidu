@@ -29,6 +29,8 @@ class Faces_Datas(object):
         self._baidu_client_secret = baidu_client_secret
         self._ezviz_accessToken = None
         self._baidu_accessToken = None
+        self._ezviz_token_lock = False  #萤石token锁
+        self._baidu_token_lock = False  #百度token锁
 
     @property
     def ezviz_accessToken(self):
@@ -42,31 +44,40 @@ class Faces_Datas(object):
 
     async def async_get_ezviz_token(self, datetimenow):
         """获取萤石token"""
-        getTokenUrl = EZVIZ_BASE_URL + "/api/lapp/token/get"
-        payload = {
-            'appKey': self._ezviz_appkey,
-            'appSecret': self._ezviz_appSecret
-        }
-        _LOGGER.info("时间:%s正在获取萤石Token....", datetimenow)
-        result = await self.fetch_data(getTokenUrl, payload, "萤石Tkoen")
-        if result is not None and result["code"] == "200":
-            data = result["data"]
-            token = data["accessToken"]
-            _LOGGER.debug("获取的萤石token为:%s", token)
-            self._ezviz_accessToken = token
-            expireTime = int(data['expireTime'])
-            timeStamp = int(expireTime / 1000)
-            dateArray = datetime.datetime.fromtimestamp(timeStamp)
-            _LOGGER.debug("萤石token下次更新时间:%s", dateArray)
-            #添加一个事件，在指定时间再次获取token
-            async_track_point_in_time(hass=self._hass,
-                                      action=self.async_get_ezviz_token,
-                                      point_in_time=dateArray)
-        elif result is not None and result["code"] == "10007":
-            _LOGGER.error("获取萤石接口:%s次", result['msg'])
-        else:
-            _LOGGER.error("获取萤石Token错误:%s", result)
-            self._ezviz_accessToken = None
+        #加个同步锁，多设备的时候有时请求两次token
+        if self._ezviz_token_lock:
+            return
+        self._ezviz_token_lock = True
+        try:
+            getTokenUrl = EZVIZ_BASE_URL + "/api/lapp/token/get"
+            payload = {
+                'appKey': self._ezviz_appkey,
+                'appSecret': self._ezviz_appSecret
+            }
+            _LOGGER.info("时间:%s正在获取萤石Token....", datetimenow)
+            result = await self.fetch_data(getTokenUrl, payload, "萤石Tkoen")
+            if result is not None and result["code"] == "200":
+                data = result["data"]
+                token = data["accessToken"]
+                _LOGGER.debug("获取的萤石token为:%s", token)
+                self._ezviz_accessToken = token
+                expireTime = int(data['expireTime'])
+                timeStamp = int(expireTime / 1000)
+                dateArray = datetime.datetime.fromtimestamp(timeStamp)
+                _LOGGER.debug("萤石token下次更新时间:%s", dateArray)
+                #添加一个事件，在指定时间再次获取token
+                async_track_point_in_time(hass=self._hass,
+                                          action=self.async_get_ezviz_token,
+                                          point_in_time=dateArray)
+            elif result is not None and result["code"] == "10007":
+                _LOGGER.error("获取萤石接口:%s次", result['msg'])
+            else:
+                _LOGGER.error("获取萤石Token错误:%s", result)
+                self._ezviz_accessToken = None
+        except Exception:
+            raise
+        finally:
+            self._ezviz_token_lock = False
 
     async def async_get_ezviz_messageList(self, payload):
         """获取萤石消息列表"""
@@ -88,29 +99,38 @@ class Faces_Datas(object):
 
     async def async_get_baidu_token(self, datetimenow):
         """获取百度Token"""
-        getTokenUrl = "https://aip.baidubce.com/oauth/2.0/token"
-        payload = {
-            'grant_type': 'client_credentials',
-            'client_id': self._baidu_client_id,
-            'client_secret': self._baidu_client_secret
-        }
-        _LOGGER.info("时间:%s正在获取百度Token....", datetimenow)
-        result = await self.fetch_data(getTokenUrl, payload, "百度Tkoen")
-        if result is not None and "error" not in result:
-            token = result["access_token"]
-            _LOGGER.debug("获取的百度token为:%s", token)
-            self._baidu_accessToken = token
-            expireTime = int(result['expires_in'])
-            dateArray = datetime.datetime.now() + datetime.timedelta(
-                seconds=expireTime)
-            _LOGGER.debug("百度token下次更新时间:%s", dateArray)
-            #添加一个事件，在指定时间再次获取token
-            async_track_point_in_time(hass=self._hass,
-                                      action=self.async_get_baidu_token,
-                                      point_in_time=dateArray)
-        else:
-            _LOGGER.error("获取百度Token错误:%s", result)
-            self._baidu_accessToken = None
+        #加个同步锁，多设备的时候有时请求两次token
+        if self._baidu_token_lock:
+            return
+        self._baidu_token_lock = True
+        try:
+            getTokenUrl = "https://aip.baidubce.com/oauth/2.0/token"
+            payload = {
+                'grant_type': 'client_credentials',
+                'client_id': self._baidu_client_id,
+                'client_secret': self._baidu_client_secret
+            }
+            _LOGGER.info("时间:%s正在获取百度Token....", datetimenow)
+            result = await self.fetch_data(getTokenUrl, payload, "百度Tkoen")
+            if result is not None and "error" not in result:
+                token = result["access_token"]
+                _LOGGER.debug("获取的百度token为:%s", token)
+                self._baidu_accessToken = token
+                expireTime = int(result['expires_in'])
+                dateArray = datetime.datetime.now() + datetime.timedelta(
+                    seconds=expireTime)
+                _LOGGER.debug("百度token下次更新时间:%s", dateArray)
+                #添加一个事件，在指定时间再次获取token
+                async_track_point_in_time(hass=self._hass,
+                                          action=self.async_get_baidu_token,
+                                          point_in_time=dateArray)
+            else:
+                _LOGGER.error("获取百度Token错误:%s", result)
+                self._baidu_accessToken = None
+        except Exception:
+            raise
+        finally:
+            self._baidu_token_lock = False
 
     async def async_get_baidu_faceinfo(self, payload):
         """在百度搜索人脸"""
