@@ -1,0 +1,8 @@
+{
+  "domain": "ezviz_alarm_to_baidu",
+  "name": "ezviz to baidu face recognition",
+  "documentation": "https://github.com",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": []
+}
