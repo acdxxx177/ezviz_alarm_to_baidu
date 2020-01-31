@@ -178,6 +178,10 @@ class FaceRecognition(BinarySensorDevice):
                 fobj = face['user_list'][0]
                 if fobj['group_id'] not in faces:
                     faces[fobj['group_id']] = []
-                faces[fobj['group_id']].append(fobj['user_info'])
+                faces[fobj['group_id']].append(fobj['user_id'])
+            else:
+                if 'no_user' not in faces:
+                    faces['no_user'] = [0]
+                faces['no_user'][0] += 1
         _LOGGER.debug("检测到人脸：%s", faces)
         self._faceinfo = faces
