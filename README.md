@@ -3,7 +3,7 @@ README
 该插件用于HOMEASSISTANT，采用了萤石的HTTP接口和百度人脸识别V3接口，通过轮询萤石的警告列表中的人体感应消息，来获取图像，然后把图像通过百度人脸识别接口进行人脸识别
 
 ***
-####安装步骤：
+#### 安装步骤：
 1. 下载[ezviz_alarm_to_baidu](./config/custom_components)目录放到HOMEASSISTANT的config/custom_components目录下
 1. 申请[萤石开发平台网站](https://open.ys7.com/)和[百度开发者网站](https://cloud.baidu.com/product/face/search) 的账户并创建应用拿到key，完善以下内容，并创建百度人脸库，然后在人脸库中添加人脸
 ``` YAML {.line-numbers}
@@ -25,18 +25,18 @@ sensor:
 3. 把上面完善的内容加入config目录里的configuration.yml文件里
 3. 重启HOMEASSISTANT
 
-####在自动化获取信息方法：
+#### 在自动化获取信息方法：
 插件在检测到人脸后，会在改变状态为True
 如果检测到人脸，会在userInfo中显示json
 格式为
 ``` JSON
-{'用户组1':['用户名1','用户名2'],'用户组2':['用户名3'],'no_user':[].....}
+{"用户组1":["用户1","用户2"],"用户组2":["用户3"],"no_user":[]//.....}
 ```
-根据识别图片中人物数量显示用户组和用户名数量，'no_user'代表没有匹配到人脸（如果都匹配就不会显示）
+根据识别图片中人物数量显示用户组和用户名数量,用户组为人脸库的用户组id，用户为人脸库的用户id（可以在百度人脸库中设置，可以为中文），'no_user'代表存在没有匹配到的人脸（如果都匹配就不会显示）
 在自动化和脚本中可以用语句{{ state_attr('sensor.--实体id--', 'userInfo') }}拿到
 拿到后可以循环TTS或其他用途了,具体可以参考[这里](https://bbs.hassbian.com/forum.php?mod=viewthread&tid=6495)。
 
-####界面预览：
+#### 界面预览：
 ![界面图](/assets/界面图.png)
 
 参考的地方
