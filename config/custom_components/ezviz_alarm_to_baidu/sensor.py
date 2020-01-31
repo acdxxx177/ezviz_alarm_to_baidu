@@ -1,6 +1,7 @@
 """萤石摄像头，人体警告触发"""
 import logging
 import datetime
+import asyncio
 # 引入这两个库，用于配置文件格式校验
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
@@ -56,8 +57,8 @@ async def async_setup_platform(hass,
     #创建获取数据类
     face_data = Faces_Datas(hass, appkey, appSecret, client_id, client_secret)
     #获取萤石和百度token
-    await face_data.async_get_ezviz_token(datetime.datetime.now)
-    await face_data.async_get_baidu_token(datetime.datetime.now)
+    await face_data.async_get_ezviz_token(datetime.datetime.now())
+    await face_data.async_get_baidu_token(datetime.datetime.now())
 
     #创建实体
     creat_entiy = []
@@ -115,6 +116,11 @@ class FaceRecognition(BinarySensorDevice):
         """获取萤石消息列表"""
         if self._face_data.ezviz_accessToken is None:
             _LOGGER.error("没有萤石Token.....")
+            #休息120秒
+            await asyncio.sleep(120)
+            if self._face_data.ezviz_accessToken is None:
+                await self._face_data.async_get_ezviz_token(
+                    datetime.datetime.now())
             return
         ezviz_payload = {
             'accessToken': self._face_data.ezviz_accessToken,
@@ -131,6 +137,11 @@ class FaceRecognition(BinarySensorDevice):
             #获取图片进行人脸搜索
             if self._face_data.baidu_accessToken is None:
                 _LOGGER.error("没有百度Token.....")
+                #休息120秒
+                await asyncio.sleep(120)
+                if self._face_data.ezviz_accessToken is None:
+                    await self._face_data.async_get_baidu_token(
+                        datetime.datetime.now())
                 return
             img = await self._face_data.async_fech_imgdata(
                 ezvizmessage['imgurl'])
