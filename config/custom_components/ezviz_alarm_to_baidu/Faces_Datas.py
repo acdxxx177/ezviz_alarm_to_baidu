@@ -16,6 +16,8 @@ from homeassistant.helpers.event import async_track_point_in_time
 
 _LOGGER = logging.getLogger(__name__)
 
+EZVIZ_BASE_URL = "https://open.ys7.com"
+
 
 class Faces_Datas(object):
     def __init__(self, hass, ezviz_appkey, ezviz_appSecret, baidu_client_id,
@@ -40,7 +42,7 @@ class Faces_Datas(object):
 
     async def async_get_ezviz_token(self, datetimenow):
         """获取萤石token"""
-        getTokenUrl = "https://open.ys7.com/api/lapp/token/get"
+        getTokenUrl = EZVIZ_BASE_URL + "/api/lapp/token/get"
         payload = {
             'appKey': self._ezviz_appkey,
             'appSecret': self._ezviz_appSecret
@@ -60,13 +62,15 @@ class Faces_Datas(object):
             async_track_point_in_time(hass=self._hass,
                                       action=self.async_get_ezviz_token,
                                       point_in_time=dateArray)
+        elif result is not None and result["code"] == "10007":
+            _LOGGER.error("获取萤石接口:%s次", result['msg'])
         else:
             _LOGGER.error("获取萤石Token错误:%s", result)
             self._ezviz_accessToken = None
 
     async def async_get_ezviz_messageList(self, payload):
         """获取萤石消息列表"""
-        message_list_url = 'https://open.ys7.com/api/lapp/alarm/device/list'
+        message_list_url = EZVIZ_BASE_URL + '/api/lapp/alarm/device/list'
         result = await self.fetch_data(message_list_url, payload, "萤石消息列表")
         if result is not None and result["code"] == "200":
             messageList = result['data']
@@ -77,6 +81,8 @@ class Faces_Datas(object):
                 dateArray = datetime.datetime.fromtimestamp(timeStamp)
                 _LOGGER.debug("获取的萤石图像为:%s,时间是：%s", imgurl, dateArray)
                 return {'imgurl': imgurl, 'alarmTime': dateArray}
+        elif result is not None and result["code"] == "10007":
+            _LOGGER.error("获取萤石接口:%s次", result['msg'])
         else:
             _LOGGER.error("获取萤石消息列表错误:%s", result)
 
@@ -119,6 +125,8 @@ class Faces_Datas(object):
                           result['result']['face_num'],
                           result['result']['face_list'])
             return result['result']
+        elif 'error_code' in result and result['error_code'] == 222207:
+            _LOGGER.debug("百度人脸搜索未匹配到人脸")
         else:
             _LOGGER.error("百度人脸搜索错误:%s", result)
 
