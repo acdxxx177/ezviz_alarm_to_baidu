@@ -42,6 +42,36 @@ sensor:
 在自动化和脚本中可以用语句{{ state_attr('sensor.--实体id--', 'userInfo') }}拿到
 拿到后可以循环TTS或其他用途了,具体可以参考[这里](https://bbs.hassbian.com/forum.php?mod=viewthread&tid=6495)。
 
+#### 一个省请求数量的方法
+可以在自动化中增加规则，什么时候开启检测，示例比如每天早上8点开启检测，晚上10点关闭检测：
+``` YAML
+#[automations.yaml]
+
+#关闭萤石获取数据
+- alias: 'disabled_change_ezviz_update_shown'
+  trigger:
+    platform: time
+    #在每天晚上22点
+    at: '22:00:00'
+  action:
+    service: binary_sensor.change_ezviz_is_update
+    data:
+      status: False
+
+#开启萤石获取数据
+- alias: 'enabled _change_ezviz_update_shown'
+  trigger:
+    platform: time
+    #在每天早上8点
+    at: '8:00:00'
+  action:
+    service: binary_sensor.change_ezviz_is_update
+    data:
+      status: True
+```
+只有给binary_sensor.change_ezviz_is_update服务发送{"status":True}就开启，False关闭
+
+
 #### 界面预览：
 ![界面图](/assets/界面图.png)
 

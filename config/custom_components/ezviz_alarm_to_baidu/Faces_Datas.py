@@ -21,7 +21,7 @@ EZVIZ_BASE_URL = "https://open.ys7.com"
 
 class Faces_Datas(object):
     def __init__(self, hass, ezviz_appkey, ezviz_appSecret, baidu_client_id,
-                 baidu_client_secret):
+                 baidu_client_secret, is_update):
         self._hass = hass
         self._ezviz_appkey = ezviz_appkey
         self._ezviz_appSecret = ezviz_appSecret
@@ -31,6 +31,7 @@ class Faces_Datas(object):
         self._baidu_accessToken = None
         self._ezviz_token_lock = False  #萤石token锁
         self._baidu_token_lock = False  #百度token锁
+        self._is_update = is_update
 
     @property
     def ezviz_accessToken(self):
@@ -41,6 +42,15 @@ class Faces_Datas(object):
     def baidu_accessToken(self):
         """百度accessToken"""
         return self._baidu_accessToken
+
+    @property
+    def is_update(self):
+        """是否更新"""
+        return self._is_update
+
+    @is_update.setter
+    def is_update(self, value):
+        self._is_update = value
 
     async def async_get_ezviz_token(self, datetimenow):
         """获取萤石token"""

@@ -7,7 +7,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 #实体
-from homeassistant.components.binary_sensor import PLATFORM_SCHEMA, BinarySensorDevice, DEVICE_CLASS_MOTION
+from homeassistant.components.binary_sensor import PLATFORM_SCHEMA, BinarySensorDevice, DEVICE_CLASS_MOTION, DOMAIN
 
 from .Faces_Datas import Faces_Datas
 
@@ -38,6 +38,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     }
 })
 
+SERVICE_CHANGE_EZVIZ_IS_UPDATE_SCHEMA = vol.Schema(
+    {vol.Optional("status"): cv.boolean})
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -55,7 +58,8 @@ async def async_setup_platform(hass,
     client_secret = config.get('baidu')[CLIENT_SECRET]
     face_group = config.get('baidu')[FACE_GROUP]
     #创建获取数据类
-    face_data = Faces_Datas(hass, appkey, appSecret, client_id, client_secret)
+    face_data = Faces_Datas(hass, appkey, appSecret, client_id, client_secret,
+                            True)
     #获取萤石和百度token
     await face_data.async_get_ezviz_token(datetime.datetime.now())
     await face_data.async_get_baidu_token(datetime.datetime.now())
@@ -67,6 +71,18 @@ async def async_setup_platform(hass,
             FaceRecognition(face_data, device, MESSAGESTATUS, ALARMTYPE,
                             face_group))
     async_add_devices(creat_entiy, True)
+
+    async def change_ezviz_is_update(call):
+        """更新状态回调"""
+        status = call.data.get("status", False)
+        face_data._is_update = status
+        _LOGGER.debug("更新状态是:%s", status)
+
+    #增加一个服务,开关更新状态
+    hass.services.async_register(DOMAIN,
+                                 "change_ezviz_is_update",
+                                 change_ezviz_is_update,
+                                 schema=SERVICE_CHANGE_EZVIZ_IS_UPDATE_SCHEMA)
 
 
 class FaceRecognition(BinarySensorDevice):
@@ -105,6 +121,11 @@ class FaceRecognition(BinarySensorDevice):
     def updatetime(self):
         """更新时间."""
         return self._updatetime
+
+    @property
+    def should_poll(self):
+        """是否开始更新"""
+        return self._face_data.is_update
 
     @property
     def device_state_attributes(self):
